@@ -1,8 +1,5 @@
 import { supabase } from './lib/supabase';
-import type {
-  Transaction, CreditCard, Budget,
-  PlanningGoal, ThemeMode, Loan
-} from './types';
+import type { Transaction, CreditCard, Budget, PlanningGoal, ThemeMode } from './types';
 
 // ===================== AUTH =====================
 
@@ -10,16 +7,14 @@ export async function signUp(email: string, password: string, name: string) {
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
-    options: { data: { name } },
+    options: {  { name } },
   });
   if (error) throw error;
   return data;
 }
 
 export async function signIn(email: string, password: string) {
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email, password
-  });
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) throw error;
   return data;
 }
@@ -39,20 +34,63 @@ export function onAuthStateChange(callback: (user: any) => void) {
   });
 }
 
+// ===================== CACHE HELPER =====================
+
+async function fetchWithRetry<T>(
+  fetchFn: () => Promise<T>,
+  cacheKey: string,
+  cacheDurationMs: number = 60000
+): Promise<T> {
+  // Проверяем кэш
+  const cached = localStorage.getItem(cacheKey);
+  const cacheTime = localStorage.getItem(cacheKey + '_time');
+  
+  if (cached && cacheTime) {
+    const age = Date.now() - parseInt(cacheTime);
+    if (age < cacheDurationMs) {
+      return JSON.parse(cached);
+    }
+  }
+
+  // Пытаемся загрузить с повторами
+  let lastError: any;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const result = await fetchFn();
+      // Сохраняем в кэш
+      localStorage.setItem(cacheKey, JSON.stringify(result));
+      localStorage.setItem(cacheKey + '_time', Date.now().toString());
+      return result;
+    } catch (err) {
+      lastError = err;
+      // Если есть кэш — возвращаем его
+      if (cached) {
+        console.log('Using cached data, refreshing in background...');
+        return JSON.parse(cached);
+      }
+      // Ждём перед повтором
+      if (attempt < 2) {
+        await new Promise(resolve => setTimeout(resolve, 2000 * (attempt + 1)));
+      }
+    }
+  }
+  throw lastError;
+}
+
 // ===================== TRANSACTIONS =====================
 
 export async function getTransactions(): Promise<Transaction[]> {
-  const { data, error } = await supabase
-    .from('transactions')
-    .select('*')
-    .order('date', { ascending: false });
-  if (error) throw error;
-  return (data || []).map(mapTransaction);
+  return fetchWithRetry(async () => {
+    const { data, error } = await supabase
+      .from('transactions')
+      .select('*')
+      .order('date', { ascending: false });
+    if (error) throw error;
+    return (data || []).map(mapTransaction);
+  }, 'cache_transactions', 60000);
 }
 
-export async function addTransaction(
-  t: Omit<Transaction, 'id'>
-): Promise<Transaction> {
+export async function addTransaction(t: Omit<Transaction, 'id'>): Promise<Transaction> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
@@ -70,15 +108,19 @@ export async function addTransaction(
     .select()
     .single();
   if (error) throw error;
+  
+  // Очищаем кэш
+  localStorage.removeItem('cache_transactions');
+  
   return mapTransaction(data);
 }
 
 export async function deleteTransaction(id: string) {
-  const { error } = await supabase
-    .from('transactions')
-    .delete()
-    .eq('id', id);
+  const { error } = await supabase.from('transactions').delete().eq('id', id);
   if (error) throw error;
+  
+  // Очищаем кэш
+  localStorage.removeItem('cache_transactions');
 }
 
 function mapTransaction(row: any): Transaction {
@@ -96,17 +138,17 @@ function mapTransaction(row: any): Transaction {
 // ===================== CREDIT CARDS =====================
 
 export async function getCards(): Promise<CreditCard[]> {
-  const { data, error } = await supabase
-    .from('credit_cards')
-    .select('*')
-    .order('created_at', { ascending: true });
-  if (error) throw error;
-  return (data || []).map(mapCard);
+  return fetchWithRetry(async () => {
+    const { data, error } = await supabase
+      .from('credit_cards')
+      .select('*')
+      .order('created_at', { ascending: true });
+    if (error) throw error;
+    return (data || []).map(mapCard);
+  }, 'cache_cards', 60000);
 }
 
-export async function addCard(
-  c: Omit<CreditCard, 'id'>
-): Promise<CreditCard> {
+export async function addCard(c: Omit<CreditCard, 'id'>): Promise<CreditCard> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
@@ -124,15 +166,19 @@ export async function addCard(
     .select()
     .single();
   if (error) throw error;
+  
+  // Очищаем кэш
+  localStorage.removeItem('cache_cards');
+  
   return mapCard(data);
 }
 
 export async function deleteCard(id: string) {
-  const { error } = await supabase
-    .from('credit_cards')
-    .delete()
-    .eq('id', id);
+  const { error } = await supabase.from('credit_cards').delete().eq('id', id);
   if (error) throw error;
+  
+  // Очищаем кэш
+  localStorage.removeItem('cache_cards');
 }
 
 function mapCard(row: any): CreditCard {
@@ -147,102 +193,20 @@ function mapCard(row: any): CreditCard {
   };
 }
 
-// ===================== LOANS =====================
-
-export async function getLoans(): Promise<Loan[]> {
-  const { data, error } = await supabase
-    .from('loans')
-    .select('*')
-    .order('created_at', { ascending: true });
-  if (error) throw error;
-  return (data || []).map(mapLoan);
-}
-
-export async function addLoan(
-  loan: Omit<Loan, 'id'>
-): Promise<Loan> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
-
-  const { data, error } = await supabase
-    .from('loans')
-    .insert({
-      user_id: user.id,
-      name: loan.name,
-      bank: loan.bank,
-      total_amount: loan.totalAmount,
-      remaining_amount: loan.remainingAmount,
-      monthly_payment: loan.monthlyPayment,
-      interest_rate: loan.interestRate,
-      payment_day: loan.paymentDay,
-      next_payment_date: loan.nextPaymentDate,
-      end_date: loan.endDate || null,
-      color: loan.color,
-    })
-    .select()
-    .single();
-  if (error) throw error;
-  return mapLoan(data);
-}
-
-export async function updateLoan(
-  id: string,
-  updates: Partial<Loan>
-) {
-  const dbUpdates: any = {};
-  if (updates.remainingAmount !== undefined) {
-    dbUpdates.remaining_amount = updates.remainingAmount;
-  }
-  if (updates.nextPaymentDate !== undefined) {
-    dbUpdates.next_payment_date = updates.nextPaymentDate;
-  }
-  if (updates.name !== undefined) dbUpdates.name = updates.name;
-
-  const { error } = await supabase
-    .from('loans')
-    .update(dbUpdates)
-    .eq('id', id);
-  if (error) throw error;
-}
-
-export async function deleteLoan(id: string) {
-  const { error } = await supabase
-    .from('loans')
-    .delete()
-    .eq('id', id);
-  if (error) throw error;
-}
-
-function mapLoan(row: any): Loan {
-  return {
-    id: row.id,
-    name: row.name,
-    bank: row.bank,
-    totalAmount: row.total_amount,
-    remainingAmount: row.remaining_amount,
-    monthlyPayment: row.monthly_payment,
-    interestRate: row.interest_rate,
-    paymentDay: row.payment_day,
-    nextPaymentDate: row.next_payment_date,
-    endDate: row.end_date,
-    color: row.color,
-  };
-}
-
 // ===================== BUDGETS =====================
 
 export async function getBudgets(): Promise<Budget[]> {
-  const { data, error } = await supabase
-    .from('budgets')
-    .select('*')
-    .order('created_at', { ascending: true });
-  if (error) throw error;
-  return (data || []).map(mapBudget);
+  return fetchWithRetry(async () => {
+    const { data, error } = await supabase
+      .from('budgets')
+      .select('*')
+      .order('created_at', { ascending: true });
+    if (error) throw error;
+    return (data || []).map(mapBudget);
+  }, 'cache_budgets', 60000);
 }
 
-export async function addBudget(
-  b: Omit<Budget, 'id'>
-): Promise<Budget> {
+export async function addBudget(b: Omit<Budget, 'id'>): Promise<Budget> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
@@ -257,15 +221,19 @@ export async function addBudget(
     .select()
     .single();
   if (error) throw error;
+  
+  // Очищаем кэш
+  localStorage.removeItem('cache_budgets');
+  
   return mapBudget(data);
 }
 
 export async function deleteBudget(id: string) {
-  const { error } = await supabase
-    .from('budgets')
-    .delete()
-    .eq('id', id);
+  const { error } = await supabase.from('budgets').delete().eq('id', id);
   if (error) throw error;
+  
+  // Очищаем кэш
+  localStorage.removeItem('cache_budgets');
 }
 
 function mapBudget(row: any): Budget {
@@ -280,17 +248,17 @@ function mapBudget(row: any): Budget {
 // ===================== GOALS =====================
 
 export async function getGoals(): Promise<PlanningGoal[]> {
-  const { data, error } = await supabase
-    .from('goals')
-    .select('*')
-    .order('created_at', { ascending: true });
-  if (error) throw error;
-  return (data || []).map(mapGoal);
+  return fetchWithRetry(async () => {
+    const { data, error } = await supabase
+      .from('goals')
+      .select('*')
+      .order('created_at', { ascending: true });
+    if (error) throw error;
+    return (data || []).map(mapGoal);
+  }, 'cache_goals', 60000);
 }
 
-export async function addGoal(
-  g: Omit<PlanningGoal, 'id'>
-): Promise<PlanningGoal> {
+export async function addGoal(g: Omit<PlanningGoal, 'id'>): Promise<PlanningGoal> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
@@ -307,31 +275,30 @@ export async function addGoal(
     .select()
     .single();
   if (error) throw error;
+  
+  // Очищаем кэш
+  localStorage.removeItem('cache_goals');
+  
   return mapGoal(data);
 }
 
-export async function updateGoal(
-  id: string,
-  updates: Partial<PlanningGoal>
-) {
+export async function updateGoal(id: string, updates: Partial<PlanningGoal>) {
   const dbUpdates: any = {};
-  if (updates.currentAmount !== undefined) {
-    dbUpdates.current_amount = updates.currentAmount;
-  }
-
-  const { error } = await supabase
-    .from('goals')
-    .update(dbUpdates)
-    .eq('id', id);
+  if (updates.currentAmount !== undefined) dbUpdates.current_amount = updates.currentAmount;
+  
+  const { error } = await supabase.from('goals').update(dbUpdates).eq('id', id);
   if (error) throw error;
+  
+  // Очищаем кэш
+  localStorage.removeItem('cache_goals');
 }
 
 export async function deleteGoal(id: string) {
-  const { error } = await supabase
-    .from('goals')
-    .delete()
-    .eq('id', id);
+  const { error } = await supabase.from('goals').delete().eq('id', id);
   if (error) throw error;
+  
+  // Очищаем кэш
+  localStorage.removeItem('cache_goals');
 }
 
 function mapGoal(row: any): PlanningGoal {
@@ -345,7 +312,7 @@ function mapGoal(row: any): PlanningGoal {
   };
 }
 
-// ===================== THEME =====================
+// ===================== THEME (local only) =====================
 
 export function getTheme(): ThemeMode {
   return (localStorage.getItem('ft_theme') as ThemeMode) || 'light';
