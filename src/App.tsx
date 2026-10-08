@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, ArrowLeftRight, PieChart, PiggyBank, CreditCard,
-  Target, LogOut, Menu, Sun, Moon, Plus, ChevronRight, HandCoins
+  Target, LogOut, Menu, Sun, Moon, Plus, ChevronRight, Landmark
 } from 'lucide-react';
 import { getCurrentUser, onAuthStateChange, signOut, getTheme, saveTheme } from './store';
 import Login from './components/Login';
@@ -31,7 +31,7 @@ function Layout({ children, theme, toggleTheme }: { children: React.ReactNode; t
     { path: '/analytics', label: 'Аналитика', icon: PieChart },
     { path: '/budget', label: 'Бюджет', icon: PiggyBank },
     { path: '/credit-cards', label: 'Карты', icon: CreditCard },
-    { path: '/loans', label: 'Кредиты', icon: HandCoins },
+    { path: '/loans', label: 'Кредиты', icon: Landmark },
     { path: '/planning', label: 'Планирование', icon: Target },
   ];
 
