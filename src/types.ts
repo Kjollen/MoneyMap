@@ -17,6 +17,21 @@ export interface CreditCard {
   last4: string;
   limit: number;
   color: string;
+  cardType: 'debit' | 'credit';
+}
+
+export interface Loan {
+  id: string;
+  name: string;
+  bank: string;
+  totalAmount: number;
+  remainingAmount: number;
+  monthlyPayment: number;
+  interestRate: number;
+  paymentDay: number;
+  nextPaymentDate: string;
+  endDate: string;
+  color: string;
 }
 
 export interface Budget {
