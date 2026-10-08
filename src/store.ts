@@ -1,5 +1,5 @@
 import { supabase } from './lib/supabase';
-import type { Transaction, CreditCard, Budget, PlanningGoal, ThemeMode } from './types';
+import type { Transaction, CreditCard, Budget, PlanningGoal, ThemeMode, Loan } from './types';
 
 // ===================== AUTH =====================
 
@@ -288,7 +288,75 @@ export async function updateGoal(id: string, updates: Partial<PlanningGoal>) {
   
   const { error } = await supabase.from('goals').update(dbUpdates).eq('id', id);
   if (error) throw error;
-  
+  // ===================== LOANS =====================
+
+export async function getLoans(): Promise<Loan[]> {
+  return fetchWithRetry(async () => {
+    const { data, error } = await supabase
+      .from('loans')
+      .select('*')
+      .order('created_at', { ascending: true });
+    if (error) throw error;
+    return (data || []).map(mapLoan);
+  }, 'cache_loans', 60000);
+}
+
+export async function addLoan(loan: Omit<Loan, 'id'>): Promise<Loan> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { data, error } = await supabase
+    .from('loans')
+    .insert({
+      user_id: user.id,
+      name: loan.name,
+      bank: loan.bank,
+      total_amount: loan.totalAmount,
+      remaining_amount: loan.remainingAmount,
+      monthly_payment: loan.monthlyPayment,
+      interest_rate: loan.interestRate,
+      payment_day: loan.paymentDay,
+      next_payment_date: loan.nextPaymentDate,
+      end_date: loan.endDate || null,
+      color: loan.color,
+    })
+    .select()
+    .single();
+  if (error) throw error;
+  return mapLoan(data);
+}
+
+export async function updateLoan(id: string, updates: Partial<Loan>) {
+  const dbUpdates: any = {};
+  if (updates.remainingAmount !== undefined) dbUpdates.remaining_amount = updates.remainingAmount;
+  if (updates.nextPaymentDate !== undefined) dbUpdates.next_payment_date = updates.nextPaymentDate;
+  if (updates.name !== undefined) dbUpdates.name = updates.name;
+
+  const { error } = await supabase.from('loans').update(dbUpdates).eq('id', id);
+  if (error) throw error;
+}
+
+export async function deleteLoan(id: string) {
+  const { error } = await supabase.from('loans').delete().eq('id', id);
+  if (error) throw error;
+}
+
+function mapLoan(row: any): Loan {
+  return {
+    id: row.id,
+    name: row.name,
+    bank: row.bank,
+    totalAmount: row.total_amount,
+    remainingAmount: row.remaining_amount,
+    monthlyPayment: row.monthly_payment,
+    interestRate: row.interest_rate,
+    paymentDay: row.payment_day,
+    nextPaymentDate: row.next_payment_date,
+    endDate: row.end_date,
+    color: row.color,
+  };
+}
+
   // Очищаем кэш
   localStorage.removeItem('cache_goals');
 }
