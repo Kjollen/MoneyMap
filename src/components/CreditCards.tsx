@@ -114,7 +114,6 @@ export default function CreditCards() {
 
   return (
     <div className="space-y-6">
-      {/* Статистика */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
           <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -150,7 +149,6 @@ export default function CreditCards() {
         </div>
       </div>
 
-      {/* Фильтр */}
       <div className="flex gap-2">
         <button
           onClick={() => setFilterType('all')}
@@ -170,7 +168,7 @@ export default function CreditCards() {
               : 'px-4 py-2 rounded-lg text-sm font-medium bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 transition'
           }
         >
-          💳 Дебетовые ({debitCount})
+          Дебетовые ({debitCount})
         </button>
         <button
           onClick={() => setFilterType('credit')}
@@ -180,11 +178,10 @@ export default function CreditCards() {
               : 'px-4 py-2 rounded-lg text-sm font-medium bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 transition'
           }
         >
-          🏦 Кредитные ({creditCount})
+          Кредитные ({creditCount})
         </button>
       </div>
 
-      {/* Карточки */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {cardSpending.map(card => (
           <div key={card.id} className="relative group">
@@ -199,8 +196,8 @@ export default function CreditCards() {
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-xs px-2 py-0.5 rounded-full bg-white/20">
                       {card.cardType === 'credit'
-                        ? '🏦 Кредитная'
-                        : '💳 Дебетовая'}
+                        ? 'Кредитная'
+                        : 'Дебетовая'}
                     </span>
                   </div>
                   <p className="text-sm opacity-80">
@@ -266,7 +263,6 @@ export default function CreditCards() {
         </button>
       </div>
 
-      {/* Форма */}
       {showForm && (
         <div
           className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
@@ -288,7 +284,6 @@ export default function CreditCards() {
               </button>
             </div>
             <form onSubmit={handleAdd} className="space-y-4">
-              {/* Тип карты */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Тип карты
@@ -303,7 +298,7 @@ export default function CreditCards() {
                         : 'flex-1 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-300 transition'
                     }
                   >
-                    💳 Дебетовая
+                    Дебетовая
                   </button>
                   <button
                     type="button"
@@ -314,7 +309,7 @@ export default function CreditCards() {
                         : 'flex-1 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-300 transition'
                     }
                   >
-                    🏦 Кредитная
+                    Кредитная
                   </button>
                 </div>
               </div>
@@ -347,63 +342,4 @@ export default function CreditCards() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Последние 4 цифры
-                  </label>
-                  <input
-                    type="text"
-                    value={formLast4}
-                    onChange={e => setFormLast4(e.target.value)}
-                    maxLength={4}
-                    className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none"
-                    placeholder="4276"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    {formCardType === 'credit' ? 'Лимит (₽)' : 'Баланс (₽)'}
-                  </label>
-                  <input
-                    type="number"
-                    value={formLimit}
-                    onChange={e => setFormLimit(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none"
-                    placeholder="200000"
-                    required
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Цвет карты
-                </label>
-                <div className="flex gap-2 flex-wrap">
-                  {CARD_COLORS.map(color => (
-                    <button
-                      key={color}
-                      type="button"
-                      onClick={() => setFormColor(color)}
-                      className={
-                        formColor === color
-                          ? 'w-8 h-8 rounded-full scale-125 ring-2 ring-offset-2 ring-gray-400 transition-transform'
-                          : 'w-8 h-8 rounded-full transition-transform'
-                      }
-                      style={{ backgroundColor: color }}
-                    />
-                  ))}
-                </div>
-              </div>
-              <button
-                type="submit"
-                className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition"
-              >
-                Добавить карту
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-3
