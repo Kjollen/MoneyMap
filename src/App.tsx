@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, ArrowLeftRight, PieChart, PiggyBank, CreditCard,
-  Target, LogOut, Menu, Sun, Moon, Plus, ChevronRight
+  Target, LogOut, Menu, Sun, Moon, Plus, ChevronRight, HandCoins
 } from 'lucide-react';
 import { getCurrentUser, onAuthStateChange, signOut, getTheme, saveTheme } from './store';
 import Login from './components/Login';
@@ -11,7 +11,7 @@ import Transactions from './components/Transactions';
 import Analytics from './components/Analytics';
 import Budget from './components/Budget';
 import CreditCards from './components/CreditCards';
-import Planning from './components/Planning';
+import Loans from './components/Loans';
 
 function Layout({ children, theme, toggleTheme }: { children: React.ReactNode; theme: string; toggleTheme: () => void }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -25,12 +25,13 @@ function Layout({ children, theme, toggleTheme }: { children: React.ReactNode; t
     return () => subscription.unsubscribe();
   }, []);
 
-  const navItems = [
+    const navItems = [
     { path: '/dashboard', label: 'Дашборд', icon: LayoutDashboard },
     { path: '/transactions', label: 'Транзакции', icon: ArrowLeftRight },
     { path: '/analytics', label: 'Аналитика', icon: PieChart },
     { path: '/budget', label: 'Бюджет', icon: PiggyBank },
     { path: '/credit-cards', label: 'Карты', icon: CreditCard },
+    { path: '/loans', label: 'Кредиты', icon: HandCoins },
     { path: '/planning', label: 'Планирование', icon: Target },
   ];
 
@@ -198,10 +199,10 @@ export default function App() {
             </Layout>
           </ProtectedRoute>
         } />
-        <Route path="/credit-cards" element={
+               <Route path="/loans" element={
           <ProtectedRoute>
             <Layout theme={theme} toggleTheme={toggleTheme}>
-              <CreditCards />
+              <Loans />
             </Layout>
           </ProtectedRoute>
         } />
