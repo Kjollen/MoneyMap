@@ -1,5 +1,8 @@
 import { supabase } from './lib/supabase';
-import type { Transaction, CreditCard, Budget, PlanningGoal, ThemeMode } from './types';
+import type {
+  Transaction, CreditCard, Budget,
+  PlanningGoal, ThemeMode, Loan
+} from './types';
 
 // ===================== AUTH =====================
 
@@ -14,7 +17,9 @@ export async function signUp(email: string, password: string, name: string) {
 }
 
 export async function signIn(email: string, password: string) {
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email, password
+  });
   if (error) throw error;
   return data;
 }
@@ -45,7 +50,9 @@ export async function getTransactions(): Promise<Transaction[]> {
   return (data || []).map(mapTransaction);
 }
 
-export async function addTransaction(t: Omit<Transaction, 'id'>): Promise<Transaction> {
+export async function addTransaction(
+  t: Omit<Transaction, 'id'>
+): Promise<Transaction> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
@@ -67,7 +74,10 @@ export async function addTransaction(t: Omit<Transaction, 'id'>): Promise<Transa
 }
 
 export async function deleteTransaction(id: string) {
-  const { error } = await supabase.from('transactions').delete().eq('id', id);
+  const { error } = await supabase
+    .from('transactions')
+    .delete()
+    .eq('id', id);
   if (error) throw error;
 }
 
@@ -94,7 +104,9 @@ export async function getCards(): Promise<CreditCard[]> {
   return (data || []).map(mapCard);
 }
 
-export async function addCard(c: Omit<CreditCard, 'id'>): Promise<CreditCard> {
+export async function addCard(
+  c: Omit<CreditCard, 'id'>
+): Promise<CreditCard> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
@@ -107,6 +119,7 @@ export async function addCard(c: Omit<CreditCard, 'id'>): Promise<CreditCard> {
       last4: c.last4,
       card_limit: c.limit,
       color: c.color,
+      card_type: c.cardType || 'debit',
     })
     .select()
     .single();
@@ -115,7 +128,10 @@ export async function addCard(c: Omit<CreditCard, 'id'>): Promise<CreditCard> {
 }
 
 export async function deleteCard(id: string) {
-  const { error } = await supabase.from('credit_cards').delete().eq('id', id);
+  const { error } = await supabase
+    .from('credit_cards')
+    .delete()
+    .eq('id', id);
   if (error) throw error;
 }
 
@@ -126,6 +142,89 @@ function mapCard(row: any): CreditCard {
     bank: row.bank,
     last4: row.last4,
     limit: row.card_limit,
+    color: row.color,
+    cardType: row.card_type || 'debit',
+  };
+}
+
+// ===================== LOANS =====================
+
+export async function getLoans(): Promise<Loan[]> {
+  const { data, error } = await supabase
+    .from('loans')
+    .select('*')
+    .order('created_at', { ascending: true });
+  if (error) throw error;
+  return (data || []).map(mapLoan);
+}
+
+export async function addLoan(
+  loan: Omit<Loan, 'id'>
+): Promise<Loan> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { data, error } = await supabase
+    .from('loans')
+    .insert({
+      user_id: user.id,
+      name: loan.name,
+      bank: loan.bank,
+      total_amount: loan.totalAmount,
+      remaining_amount: loan.remainingAmount,
+      monthly_payment: loan.monthlyPayment,
+      interest_rate: loan.interestRate,
+      payment_day: loan.paymentDay,
+      next_payment_date: loan.nextPaymentDate,
+      end_date: loan.endDate || null,
+      color: loan.color,
+    })
+    .select()
+    .single();
+  if (error) throw error;
+  return mapLoan(data);
+}
+
+export async function updateLoan(
+  id: string,
+  updates: Partial<Loan>
+) {
+  const dbUpdates: any = {};
+  if (updates.remainingAmount !== undefined) {
+    dbUpdates.remaining_amount = updates.remainingAmount;
+  }
+  if (updates.nextPaymentDate !== undefined) {
+    dbUpdates.next_payment_date = updates.nextPaymentDate;
+  }
+  if (updates.name !== undefined) dbUpdates.name = updates.name;
+
+  const { error } = await supabase
+    .from('loans')
+    .update(dbUpdates)
+    .eq('id', id);
+  if (error) throw error;
+}
+
+export async function deleteLoan(id: string) {
+  const { error } = await supabase
+    .from('loans')
+    .delete()
+    .eq('id', id);
+  if (error) throw error;
+}
+
+function mapLoan(row: any): Loan {
+  return {
+    id: row.id,
+    name: row.name,
+    bank: row.bank,
+    totalAmount: row.total_amount,
+    remainingAmount: row.remaining_amount,
+    monthlyPayment: row.monthly_payment,
+    interestRate: row.interest_rate,
+    paymentDay: row.payment_day,
+    nextPaymentDate: row.next_payment_date,
+    endDate: row.end_date,
     color: row.color,
   };
 }
@@ -141,7 +240,9 @@ export async function getBudgets(): Promise<Budget[]> {
   return (data || []).map(mapBudget);
 }
 
-export async function addBudget(b: Omit<Budget, 'id'>): Promise<Budget> {
+export async function addBudget(
+  b: Omit<Budget, 'id'>
+): Promise<Budget> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
@@ -160,7 +261,10 @@ export async function addBudget(b: Omit<Budget, 'id'>): Promise<Budget> {
 }
 
 export async function deleteBudget(id: string) {
-  const { error } = await supabase.from('budgets').delete().eq('id', id);
+  const { error } = await supabase
+    .from('budgets')
+    .delete()
+    .eq('id', id);
   if (error) throw error;
 }
 
@@ -184,7 +288,9 @@ export async function getGoals(): Promise<PlanningGoal[]> {
   return (data || []).map(mapGoal);
 }
 
-export async function addGoal(g: Omit<PlanningGoal, 'id'>): Promise<PlanningGoal> {
+export async function addGoal(
+  g: Omit<PlanningGoal, 'id'>
+): Promise<PlanningGoal> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
@@ -204,16 +310,27 @@ export async function addGoal(g: Omit<PlanningGoal, 'id'>): Promise<PlanningGoal
   return mapGoal(data);
 }
 
-export async function updateGoal(id: string, updates: Partial<PlanningGoal>) {
+export async function updateGoal(
+  id: string,
+  updates: Partial<PlanningGoal>
+) {
   const dbUpdates: any = {};
-  if (updates.currentAmount !== undefined) dbUpdates.current_amount = updates.currentAmount;
-  
-  const { error } = await supabase.from('goals').update(dbUpdates).eq('id', id);
+  if (updates.currentAmount !== undefined) {
+    dbUpdates.current_amount = updates.currentAmount;
+  }
+
+  const { error } = await supabase
+    .from('goals')
+    .update(dbUpdates)
+    .eq('id', id);
   if (error) throw error;
 }
 
 export async function deleteGoal(id: string) {
-  const { error } = await supabase.from('goals').delete().eq('id', id);
+  const { error } = await supabase
+    .from('goals')
+    .delete()
+    .eq('id', id);
   if (error) throw error;
 }
 
@@ -228,7 +345,7 @@ function mapGoal(row: any): PlanningGoal {
   };
 }
 
-// ===================== THEME (local only) =====================
+// ===================== THEME =====================
 
 export function getTheme(): ThemeMode {
   return (localStorage.getItem('ft_theme') as ThemeMode) || 'light';
