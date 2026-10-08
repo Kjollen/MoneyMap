@@ -39,7 +39,7 @@ export function onAuthStateChange(callback: (user: any) => void) {
 async function fetchWithRetry<T>(
   fetchFn: () => Promise<T>,
   cacheKey: string,
-  cacheDurationMs: number = 60000
+  cacheDurationMs: number = 300000
 ): Promise<T> {
   const cached = localStorage.getItem(cacheKey);
   const cacheTime = localStorage.getItem(cacheKey + '_time');
@@ -79,7 +79,7 @@ export async function getTransactions(): Promise<Transaction[]> {
       .order('date', { ascending: false });
     if (error) throw error;
     return (data || []).map(mapTransaction);
-  }, 'cache_transactions', 60000);
+  }, 'cache_transactions', 300000);
 }
 
 export async function addTransaction(t: Omit<Transaction, 'id'>): Promise<Transaction> {
@@ -131,7 +131,7 @@ export async function getCards(): Promise<CreditCard[]> {
       .order('created_at', { ascending: true });
     if (error) throw error;
     return (data || []).map(mapCard);
-  }, 'cache_cards', 60000);
+  }, 'cache_cards', 300000);
 }
 
 export async function addCard(c: Omit<CreditCard, 'id'>): Promise<CreditCard> {
@@ -183,7 +183,7 @@ export async function getBudgets(): Promise<Budget[]> {
       .order('created_at', { ascending: true });
     if (error) throw error;
     return (data || []).map(mapBudget);
-  }, 'cache_budgets', 60000);
+  }, 'cache_budgets', 300000);
 }
 
 export async function addBudget(b: Omit<Budget, 'id'>): Promise<Budget> {
@@ -229,7 +229,7 @@ export async function getGoals(): Promise<PlanningGoal[]> {
       .order('created_at', { ascending: true });
     if (error) throw error;
     return (data || []).map(mapGoal);
-  }, 'cache_goals', 60000);
+  }, 'cache_goals', 300000);
 }
 
 export async function addGoal(g: Omit<PlanningGoal, 'id'>): Promise<PlanningGoal> {
@@ -287,7 +287,7 @@ export async function getLoans(): Promise<Loan[]> {
       .order('created_at', { ascending: true });
     if (error) throw error;
     return (data || []).map(mapLoan);
-  }, 'cache_loans', 60000);
+  }, 'cache_loans', 300000);
 }
 
 export async function addLoan(loan: Omit<Loan, 'id'>): Promise<Loan> {
