@@ -167,6 +167,11 @@ export default function App() {
   }, [theme]);
 
   const toggleTheme = () => setTheme(t => t === 'dark' ? 'light' : 'dark');
+  useEffect(() => {
+    keepAlive();
+    const interval = setInterval(keepAlive, 25000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <BrowserRouter>
