@@ -11,6 +11,7 @@ import Transactions from './components/Transactions';
 import Analytics from './components/Analytics';
 import Budget from './components/Budget';
 import CreditCards from './components/CreditCards';
+import Planning from './components/Planning';
 import Loans from './components/Loans';
 
 function Layout({ children, theme, toggleTheme }: { children: React.ReactNode; theme: string; toggleTheme: () => void }) {
