@@ -11,6 +11,7 @@ import Transactions from './components/Transactions';
 import Analytics from './components/Analytics';
 import Budget from './components/Budget';
 import CreditCards from './components/CreditCards';
+import Loans from './components/Loans';
 import Planning from './components/Planning';
 
 function Layout({ children, theme, toggleTheme }: { children: React.ReactNode; theme: string; toggleTheme: () => void }) {
@@ -48,8 +49,9 @@ function Layout({ children, theme, toggleTheme }: { children: React.ReactNode; t
     { path: '/analytics', label: 'Аналитика', icon: PieChart },
     { path: '/budget', label: 'Бюджет', icon: PiggyBank },
     { path: '/credit-cards', label: 'Карты', icon: CreditCard },
+    { path: '/loans', label: 'Кредиты', icon: Target },
     { path: '/planning', label: 'Планирование', icon: Target },
-  ];
+      ];
 
   const handleLogout = async () => {
     await signOut();
