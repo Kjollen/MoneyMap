@@ -5,7 +5,6 @@ import {
   Target, LogOut, Menu, Sun, Moon, Plus, ChevronRight, Landmark
 } from 'lucide-react';
 import { getCurrentUser, onAuthStateChange, signOut, getTheme, saveTheme } from './store';
-import { keepAlive } from './store';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
 import Transactions from './components/Transactions';
@@ -167,11 +166,6 @@ export default function App() {
   }, [theme]);
 
   const toggleTheme = () => setTheme(t => t === 'dark' ? 'light' : 'dark');
-  useEffect(() => {
-    keepAlive();
-    const interval = setInterval(keepAlive, 25000);
-    return () => clearInterval(interval);
-  }, []);
 
   return (
     <BrowserRouter>
