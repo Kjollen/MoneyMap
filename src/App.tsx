@@ -10,7 +10,7 @@ import Dashboard from './components/Dashboard';
 import Transactions from './components/Transactions';
 import Analytics from './components/Analytics';
 import Budget from './components/Budget';
-import CreditCards from './components/CreditCards';
+import Cards from './components/Cards';
 import Planning from './components/Planning';
 import Loans from './components/Loans';
 
