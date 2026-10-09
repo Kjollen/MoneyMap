@@ -18,8 +18,6 @@ import {
 } from 'firebase/firestore';
 import type { Transaction, CreditCard, Budget, PlanningGoal, ThemeMode, Loan } from './types';
 
-// ===================== AUTH =====================
-
 export async function signUp(email: string, password: string, name: string) {
   const userCredential = await createUserWithEmailAndPassword(auth, email, password);
   return userCredential.user;
@@ -41,8 +39,6 @@ export async function getCurrentUser(): Promise<User | null> {
 export function onAuthStateChange(callback: (user: User | null) => void) {
   return onAuthStateChanged(auth, callback);
 }
-
-// ===================== CACHE HELPER =====================
 
 async function fetchWithRetry<T>(
   fetchFn: () => Promise<T>,
@@ -83,12 +79,10 @@ function getUid(): string {
   return user.uid;
 }
 
-// ===================== TRANSACTIONS =====================
-
 export async function getTransactions(): Promise<Transaction[]> {
   return fetchWithRetry(async () => {
     const uid = getUid();
-        const q = query(
+    const q = query(
       collection(db, 'transactions'),
       where('userId', '==', uid)
     );
@@ -124,8 +118,6 @@ export async function deleteTransaction(id: string) {
   await deleteDoc(doc(db, 'transactions', id));
   localStorage.removeItem('cache_transactions');
 }
-
-// ===================== CREDIT CARDS =====================
 
 export async function getCards(): Promise<CreditCard[]> {
   return fetchWithRetry(async () => {
@@ -168,8 +160,6 @@ export async function deleteCard(id: string) {
   localStorage.removeItem('cache_cards');
 }
 
-// ===================== BUDGETS =====================
-
 export async function getBudgets(): Promise<Budget[]> {
   return fetchWithRetry(async () => {
     const uid = getUid();
@@ -204,8 +194,6 @@ export async function deleteBudget(id: string) {
   await deleteDoc(doc(db, 'budgets', id));
   localStorage.removeItem('cache_budgets');
 }
-
-// ===================== GOALS =====================
 
 export async function getGoals(): Promise<PlanningGoal[]> {
   return fetchWithRetry(async () => {
@@ -256,8 +244,6 @@ export async function deleteGoal(id: string) {
   await deleteDoc(doc(db, 'goals', id));
   localStorage.removeItem('cache_goals');
 }
-
-// ===================== LOANS =====================
 
 export async function getLoans(): Promise<Loan[]> {
   return fetchWithRetry(async () => {
@@ -317,8 +303,6 @@ export async function deleteLoan(id: string) {
   await deleteDoc(doc(db, 'loans', id));
   localStorage.removeItem('cache_loans');
 }
-
-// ===================== THEME =====================
 
 export function getTheme(): ThemeMode {
   return (localStorage.getItem('ft_theme') as ThemeMode) || 'light';
