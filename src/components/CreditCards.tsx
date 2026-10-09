@@ -22,17 +22,13 @@ export default function CreditCards() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [filterType, setFilterType] = useState<
-    'all' | 'debit' | 'credit'
-  >('all');
+  const [filterType, setFilterType] = useState<'all' | 'debit' | 'credit'>('all');
   const [formName, setFormName] = useState('');
   const [formBank, setFormBank] = useState('');
   const [formLast4, setFormLast4] = useState('');
   const [formLimit, setFormLimit] = useState('');
   const [formColor, setFormColor] = useState(CARD_COLORS[0]);
-  const [formCardType, setFormCardType] = useState<
-    'debit' | 'credit'
-  >('debit');
+  const [formCardType, setFormCardType] = useState<'debit' | 'credit'>('debit');
 
   useEffect(() => {
     Promise.all([getCards(), getTransactions()])
@@ -94,15 +90,9 @@ export default function CreditCards() {
   });
 
   const totalLimit = cards.reduce((s, c) => s + c.limit, 0);
-  const totalSpent = cardSpending.reduce(
-    (s, c) => s + c.spent, 0
-  );
-  const debitCount = cards.filter(
-    c => c.cardType === 'debit'
-  ).length;
-  const creditCount = cards.filter(
-    c => c.cardType === 'credit'
-  ).length;
+  const totalSpent = cardSpending.reduce((s, c) => s + c.spent, 0);
+  const debitCount = cards.filter(c => c.cardType === 'debit').length;
+  const creditCount = cards.filter(c => c.cardType === 'credit').length;
 
   if (loading) {
     return (
@@ -116,67 +106,45 @@ export default function CreditCards() {
     <div className="space-y-6">
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            Дебетовые
-          </p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white">
-            {debitCount}
-          </p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Дебетовые</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">{debitCount}</p>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            Кредитные
-          </p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white">
-            {creditCount}
-          </p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Кредитные</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">{creditCount}</p>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            Общий лимит
-          </p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white">
-            {totalLimit.toLocaleString('ru')} ₽
-          </p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Общий лимит</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">{totalLimit.toLocaleString('ru')} руб</p>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            Потрачено
-          </p>
-          <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">
-            {totalSpent.toLocaleString('ru')} ₽
-          </p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Потрачено</p>
+          <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">{totalSpent.toLocaleString('ru')} руб</p>
         </div>
       </div>
 
       <div className="flex gap-2">
         <button
           onClick={() => setFilterType('all')}
-          className={
-            filterType === 'all'
-              ? 'px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white transition'
-              : 'px-4 py-2 rounded-lg text-sm font-medium bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 transition'
-          }
+          className={filterType === 'all'
+            ? 'px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white transition'
+            : 'px-4 py-2 rounded-lg text-sm font-medium bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 transition'}
         >
           Все ({cards.length})
         </button>
         <button
           onClick={() => setFilterType('debit')}
-          className={
-            filterType === 'debit'
-              ? 'px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white transition'
-              : 'px-4 py-2 rounded-lg text-sm font-medium bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 transition'
-          }
+          className={filterType === 'debit'
+            ? 'px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white transition'
+            : 'px-4 py-2 rounded-lg text-sm font-medium bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 transition'}
         >
           Дебетовые ({debitCount})
         </button>
         <button
           onClick={() => setFilterType('credit')}
-          className={
-            filterType === 'credit'
-              ? 'px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white transition'
-              : 'px-4 py-2 rounded-lg text-sm font-medium bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 transition'
-          }
+          className={filterType === 'credit'
+            ? 'px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white transition'
+            : 'px-4 py-2 rounded-lg text-sm font-medium bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 transition'}
         >
           Кредитные ({creditCount})
         </button>
@@ -187,56 +155,40 @@ export default function CreditCards() {
           <div key={card.id} className="relative group">
             <div
               className="rounded-2xl p-6 text-white shadow-lg min-h-[200px] flex flex-col justify-between"
-              style={{
-                background: `linear-gradient(135deg, ${card.color}, ${card.color}bb)`
-              }}
+              style={{ background: 'linear-gradient(135deg, ' + card.color + ', ' + card.color + 'bb)' }}
             >
               <div className="flex justify-between items-start">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-xs px-2 py-0.5 rounded-full bg-white/20">
-                      {card.cardType === 'credit'
-                        ? 'Кредитная'
-                        : 'Дебетовая'}
+                      {card.cardType === 'credit' ? 'Кредитная' : 'Дебетовая'}
                     </span>
                   </div>
-                  <p className="text-sm opacity-80">
-                    {card.bank}
-                  </p>
-                  <p className="font-semibold text-lg">
-                    {card.name}
-                  </p>
+                  <p className="text-sm opacity-80">{card.bank}</p>
+                  <p className="font-semibold text-lg">{card.name}</p>
                 </div>
                 <CardIcon size={28} className="opacity-60" />
               </div>
               <div className="mt-8">
                 <p className="font-mono text-xl tracking-wider mb-3">
-                  •••• •••• •••• {card.last4}
+                  **** **** **** {card.last4}
                 </p>
                 <div className="flex justify-between items-end">
                   <div>
                     <p className="text-xs opacity-70">
                       {card.cardType === 'credit' ? 'Лимит' : 'Баланс'}
                     </p>
-                    <p className="font-semibold">
-                      {card.limit.toLocaleString('ru')} ₽
-                    </p>
+                    <p className="font-semibold">{card.limit.toLocaleString('ru')} руб</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-xs opacity-70">
-                      Потрачено
-                    </p>
-                    <p className="font-semibold">
-                      {card.spent.toLocaleString('ru')} ₽
-                    </p>
+                    <p className="text-xs opacity-70">Потрачено</p>
+                    <p className="font-semibold">{card.spent.toLocaleString('ru')} руб</p>
                   </div>
                 </div>
                 <div className="mt-3 h-1.5 bg-white/20 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-white/60 rounded-full transition-all"
-                    style={{
-                      width: `${Math.min((card.spent / card.limit) * 100, 100)}%`
-                    }}
+                    style={{ width: Math.min((card.spent / card.limit) * 100, 100) + '%' }}
                   />
                 </div>
               </div>
@@ -273,41 +225,30 @@ export default function CreditCards() {
             onClick={e => e.stopPropagation()}
           >
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Новая карта
-              </h3>
-              <button
-                onClick={() => setShowForm(false)}
-                className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
-              >
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Новая карта</h3>
+              <button onClick={() => setShowForm(false)} className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
                 <X size={20} className="text-gray-500" />
               </button>
             </div>
             <form onSubmit={handleAdd} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Тип карты
-                </label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Тип карты</label>
                 <div className="flex rounded-lg border border-gray-200 dark:border-gray-600 overflow-hidden">
                   <button
                     type="button"
                     onClick={() => setFormCardType('debit')}
-                    className={
-                      formCardType === 'debit'
-                        ? 'flex-1 py-2.5 text-sm font-medium bg-indigo-500 text-white transition'
-                        : 'flex-1 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-300 transition'
-                    }
+                    className={formCardType === 'debit'
+                      ? 'flex-1 py-2.5 text-sm font-medium bg-indigo-500 text-white transition'
+                      : 'flex-1 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-300 transition'}
                   >
                     Дебетовая
                   </button>
                   <button
                     type="button"
                     onClick={() => setFormCardType('credit')}
-                    className={
-                      formCardType === 'credit'
-                        ? 'flex-1 py-2.5 text-sm font-medium bg-indigo-500 text-white transition'
-                        : 'flex-1 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-300 transition'
-                    }
+                    className={formCardType === 'credit'
+                      ? 'flex-1 py-2.5 text-sm font-medium bg-indigo-500 text-white transition'
+                      : 'flex-1 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-300 transition'}
                   >
                     Кредитная
                   </button>
@@ -315,9 +256,7 @@ export default function CreditCards() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Название
-                </label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Название</label>
                 <input
                   type="text"
                   value={formName}
@@ -327,10 +266,9 @@ export default function CreditCards() {
                   required
                 />
               </div>
+
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Банк
-                </label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Банк</label>
                 <input
                   type="text"
                   value={formBank}
@@ -340,6 +278,62 @@ export default function CreditCards() {
                   required
                 />
               </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-3
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Последние 4 цифры</label>
+                  <input
+                    type="text"
+                    value={formLast4}
+                    onChange={e => setFormLast4(e.target.value)}
+                    maxLength={4}
+                    className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                    placeholder="4276"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {formCardType === 'credit' ? 'Лимит (руб)' : 'Баланс (руб)'}
+                  </label>
+                  <input
+                    type="number"
+                    value={formLimit}
+                    onChange={e => setFormLimit(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                    placeholder="200000"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Цвет карты</label>
+                <div className="flex gap-2 flex-wrap">
+                  {CARD_COLORS.map(color => (
+                    <button
+                      key={color}
+                      type="button"
+                      onClick={() => setFormColor(color)}
+                      className={formColor === color
+                        ? 'w-8 h-8 rounded-full scale-125 ring-2 ring-offset-2 ring-gray-400 transition-transform'
+                        : 'w-8 h-8 rounded-full transition-transform'}
+                      style={{ backgroundColor: color }}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition"
+              >
+                Добавить карту
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
