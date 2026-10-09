@@ -42,14 +42,10 @@ export default function Dashboard() {
     );
   });
 
-  const totalIncome = thisMonth
-    .filter(t => t.type === 'income')
-    .reduce((s, t) => s + t.amount, 0);
-  const totalExpense = thisMonth
-    .filter(t => t.type === 'expense')
-    .reduce((s, t) => s + t.amount, 0);
-  const balance = totalIncome - totalExpense;
-  const totalBalance = cards.reduce((s, c) => s + c.limit, 0);
+  const totalIncome = thisMonth.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+const totalExpense = thisMonth.filter(t => t.type === 'expense' && !t.cardId).reduce((s, t) => s + t.amount, 0);
+const balance = totalIncome - totalExpense;
+const totalBalance = cards.filter(c => c.cardType === 'debit').reduce((s, c) => s + c.limit, 0);
 
   const chartData = useMemo(() => {
     const start = startOfMonth(now);
