@@ -36,8 +36,11 @@ export default function Transactions() {
       const [tx, c] = await Promise.all([getTransactions(), getCards()]);
       setTransactions(tx);
       setCards(c);
-    } catch (err) { console.error(err); }
-    finally { setLoading(false); }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const filtered = transactions
@@ -64,16 +67,23 @@ export default function Transactions() {
       });
       setTransactions(prev => [newTx, ...prev]);
       setShowForm(false);
-      setFormAmount(''); setFormCategory(''); setFormDescription('');
-      setFormDate(format(new Date(), 'yyyy-MM-dd')); setFormCardId('');
-    } catch (err) { console.error(err); }
+      setFormAmount('');
+      setFormCategory('');
+      setFormDescription('');
+      setFormDate(format(new Date(), 'yyyy-MM-dd'));
+      setFormCardId('');
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const handleDelete = async (id: string) => {
     try {
       await deleteTransaction(id);
       setTransactions(prev => prev.filter(t => t.id !== id));
-    } catch (err) { console.error(err); }
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const categories = formType === 'income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
@@ -81,7 +91,13 @@ export default function Transactions() {
   const totalIncome = filtered.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
   const totalExpense = filtered.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
 
-  if (loading) return <div className="flex items-center justify-center h-64"><p className="text-gray-500">Загрузка...</p></div>;
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-gray-500">Загрузка...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -92,11 +108,11 @@ export default function Transactions() {
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
           <p className="text-sm text-gray-500 dark:text-gray-400">Доходы</p>
-          <p className="text-2xl font-bold text-green-600 dark:text-green-400">+{totalIncome.toLocaleString('ru')} ₽</p>
+          <p className="text-2xl font-bold text-green-600 dark:text-green-400">+{totalIncome.toLocaleString('ru')} руб</p>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
           <p className="text-sm text-gray-500 dark:text-gray-400">Расходы</p>
-          <p className="text-2xl font-bold text-red-600 dark:text-red-400">-{totalExpense.toLocaleString('ru')} ₽</p>
+          <p className="text-2xl font-bold text-red-600 dark:text-red-400">-{totalExpense.toLocaleString('ru')} руб</p>
         </div>
       </div>
 
@@ -105,22 +121,24 @@ export default function Transactions() {
           <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Новая операция</h3>
-              <button onClick={() => setShowForm(false)} className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"><X size={20} className="text-gray-500" /></button>
+              <button onClick={() => setShowForm(false)} className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+                <X size={20} className="text-gray-500" />
+              </button>
             </div>
             <form onSubmit={handleAdd} className="space-y-4">
               <div className="flex rounded-lg border border-gray-200 dark:border-gray-600 overflow-hidden">
-                <button type="button" onClick={() => { setFormType('expense'); setFormCategory(''); }} className={`flex-1 py-2.5 text-sm font-medium transition ${formType === 'expense' ? 'bg-red-500 text-white' : 'text-gray-600 dark:text-gray-300'}`}>Расход</button>
-                <button type="button" onClick={() => { setFormType('income'); setFormCategory(''); }} className={`flex-1 py-2.5 text-sm font-medium transition ${formType === 'income' ? 'bg-green-500 text-white' : 'text-gray-600 dark:text-gray-300'}`}>Доход</button>
+                <button type="button" onClick={() => { setFormType('expense'); setFormCategory(''); }} className={'flex-1 py-2.5 text-sm font-medium transition ' + (formType === 'expense' ? 'bg-red-500 text-white' : 'text-gray-600 dark:text-gray-300')}>Расход</button>
+                <button type="button" onClick={() => { setFormType('income'); setFormCategory(''); }} className={'flex-1 py-2.5 text-sm font-medium transition ' + (formType === 'income' ? 'bg-green-500 text-white' : 'text-gray-600 dark:text-gray-300')}>Доход</button>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Сумма (₽)</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Сумма (руб)</label>
                 <input type="number" value={formAmount} onChange={e => setFormAmount(e.target.value)} className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none text-lg font-semibold" placeholder="0" required />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Категория</label>
                 <div className="grid grid-cols-3 gap-2">
                   {categories.map(cat => (
-                    <button key={cat} type="button" onClick={() => setFormCategory(cat)} className={`px-3 py-2 rounded-lg text-xs font-medium transition border ${formCategory === cat ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300'}`}>
+                    <button key={cat} type="button" onClick={() => setFormCategory(cat)} className={'px-3 py-2 rounded-lg text-xs font-medium transition border ' + (formCategory === cat ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300')}>
                       {CATEGORY_ICONS[cat]} {cat}
                     </button>
                   ))}
@@ -136,13 +154,20 @@ export default function Transactions() {
                   <input type="date" value={formDate} onChange={e => setFormDate(e.target.value)} className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none" />
                 </div>
                 <div>
-                  <div>
-  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Кредитная карта</label>
-  <select value={formCardId} onChange={e => setFormCardId(e.target.value)} className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none">
-    <option value="">Общий остаток</option>
-    {cards.filter(c => c.cardType === 'credit').map(c => <option key={c.id} value={c.id}>{c.name} (•••• {c.last4})</option>)}
-  </select>
-</div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Кредитная карта</label>
+                  <select value={formCardId} onChange={e => setFormCardId(e.target.value)} className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none">
+                    <option value="">Общий остаток</option>
+                    {cards.filter(c => c.cardType === 'credit').map(c => (
+                      <option key={c.id} value={c.id}>{c.name} (**** {c.last4})</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <button type="submit" className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition">Добавить</button>
+            </form>
+          </div>
+        </div>
+      )}
 
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
         <div className="flex flex-col sm:flex-row gap-3">
@@ -166,20 +191,25 @@ export default function Transactions() {
 
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
         {filtered.length === 0 ? (
-          <div className="p-12 text-center"><p className="text-gray-500 dark:text-gray-400">Операции не найдены</p></div>
+          <div className="p-12 text-center">
+            <p className="text-gray-500 dark:text-gray-400">Операции не найдены</p>
+          </div>
         ) : (
           <div className="divide-y divide-gray-100 dark:divide-gray-700">
             {filtered.map(t => (
               <div key={t.id} className="flex items-center gap-3 p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition group">
-                <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg ${t.type === 'income' ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30'}`}>
+                <div className={'w-10 h-10 rounded-lg flex items-center justify-center text-lg ' + (t.type === 'income' ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30')}>
                   {CATEGORY_ICONS[t.category] || '📦'}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{t.description}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">{t.category} · {format(parseISO(t.date), 'dd MMMM yyyy', { locale: ru })}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {t.category} · {format(parseISO(t.date), 'dd MMMM yyyy', { locale: ru })}
+                    {t.cardId && ' · 💳 Кредитная'}
+                  </p>
                 </div>
-                <span className={`text-sm font-semibold whitespace-nowrap ${t.type === 'income' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                  {t.type === 'income' ? '+' : '-'}{t.amount.toLocaleString('ru')} ₽
+                <span className={'text-sm font-semibold whitespace-nowrap ' + (t.type === 'income' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400')}>
+                  {t.type === 'income' ? '+' : '-'}{t.amount.toLocaleString('ru')} руб
                 </span>
                 <button onClick={() => handleDelete(t.id)} className="opacity-0 group-hover:opacity-100 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500 transition">
                   <Trash2 size={16} />
