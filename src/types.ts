@@ -17,7 +17,7 @@ export interface CreditCard {
   last4: string;
   limit: number;
   color: string;
-  cardType: 'debit' | 'credit';
+  cardType?: 'debit' | 'credit';
 }
 
 export interface Loan {
