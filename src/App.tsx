@@ -19,29 +19,12 @@ function Layout({ children, theme, toggleTheme }: { children: React.ReactNode; t
   const location = useLocation();
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
-  const [touchStart, setTouchStart] = useState<number | null>(null);
 
   useEffect(() => {
     getCurrentUser().then(setUser);
     const unsubscribe = onAuthStateChange(setUser);
     return () => unsubscribe();
   }, []);
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    setTouchStart(e.touches[0].clientX);
-  };
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    if (touchStart === null) return;
-    const touchEnd = e.changedTouches[0].clientX;
-    const diff = touchEnd - touchStart;
-    
-    if (diff > 50 && touchStart < 50) {
-      setSidebarOpen(true);
-    } else if (diff < -50 && sidebarOpen) {
-      setSidebarOpen(false);
-    }
-  };
 
   const navItems = [
     { path: '/dashboard', label: 'Дашборд', icon: LayoutDashboard },
@@ -51,7 +34,7 @@ function Layout({ children, theme, toggleTheme }: { children: React.ReactNode; t
     { path: '/credit-cards', label: 'Карты', icon: CreditCard },
     { path: '/loans', label: 'Кредиты', icon: Target },
     { path: '/planning', label: 'Планирование', icon: Target },
-      ];
+  ];
 
   const handleLogout = async () => {
     await signOut();
@@ -59,15 +42,11 @@ function Layout({ children, theme, toggleTheme }: { children: React.ReactNode; t
   };
 
   return (
-    <div 
-      className="min-h-screen bg-gray-50 dark:bg-gray-900 flex"
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
-    >
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
       {sidebarOpen && (
         <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />
       )}
-      <aside className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transform transition-transform duration-200 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
+      <aside className={'fixed lg:static inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transform transition-transform duration-200 ' + (sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0')}>
         <div className="flex flex-col h-full">
           <div className="p-6 border-b border-gray-200 dark:border-gray-700">
             <h1 className="text-xl font-bold text-gray-900 dark:text-white">💰 MoneyMap</h1>
@@ -78,7 +57,7 @@ function Layout({ children, theme, toggleTheme }: { children: React.ReactNode; t
               const active = location.pathname === item.path;
               return (
                 <Link key={item.path} to={item.path} onClick={() => setSidebarOpen(false)}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${active ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-medium' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}>
+                  className={'flex items-center gap-3 px-4 py-3 rounded-lg transition-all ' + (active ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-medium' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700')}>
                   <Icon size={20} />
                   <span>{item.label}</span>
                 </Link>
@@ -151,6 +130,7 @@ export default function App() {
         <Route path="/analytics" element={<ProtectedRoute><Layout theme={theme} toggleTheme={toggleTheme}><Analytics /></Layout></ProtectedRoute>} />
         <Route path="/budget" element={<ProtectedRoute><Layout theme={theme} toggleTheme={toggleTheme}><Budget /></Layout></ProtectedRoute>} />
         <Route path="/credit-cards" element={<ProtectedRoute><Layout theme={theme} toggleTheme={toggleTheme}><CreditCards /></Layout></ProtectedRoute>} />
+        <Route path="/loans" element={<ProtectedRoute><Layout theme={theme} toggleTheme={toggleTheme}><Loans /></Layout></ProtectedRoute>} />
         <Route path="/planning" element={<ProtectedRoute><Layout theme={theme} toggleTheme={toggleTheme}><Planning /></Layout></ProtectedRoute>} />
       </Routes>
     </BrowserRouter>
