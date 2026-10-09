@@ -92,8 +92,7 @@ export async function getTransactions(): Promise<Transaction[]> {
     const q = query(
       collection(db, 'transactions'),
       where('userId', '==', uid),
-      orderBy('date', 'desc')
-    );
+     );
     const snapshot = await getDocs(q);
     return snapshot.docs.map(d => ({
       id: d.id,
@@ -135,8 +134,7 @@ export async function getCards(): Promise<CreditCard[]> {
     const q = query(
       collection(db, 'credit_cards'),
       where('userId', '==', uid),
-      orderBy('createdAt', 'asc')
-    );
+      );
     const snapshot = await getDocs(q);
     return snapshot.docs.map(d => ({
       id: d.id,
@@ -179,8 +177,7 @@ export async function getBudgets(): Promise<Budget[]> {
     const q = query(
       collection(db, 'budgets'),
       where('userId', '==', uid),
-      orderBy('createdAt', 'asc')
-    );
+     );
     const snapshot = await getDocs(q);
     return snapshot.docs.map(d => ({
       id: d.id,
@@ -217,8 +214,7 @@ export async function getGoals(): Promise<PlanningGoal[]> {
     const q = query(
       collection(db, 'goals'),
       where('userId', '==', uid),
-      orderBy('createdAt', 'asc')
-    );
+     );
     const snapshot = await getDocs(q);
     return snapshot.docs.map(d => ({
       id: d.id,
@@ -270,8 +266,7 @@ export async function getLoans(): Promise<Loan[]> {
     const q = query(
       collection(db, 'loans'),
       where('userId', '==', uid),
-      orderBy('createdAt', 'asc')
-    );
+     );
     const snapshot = await getDocs(q);
     return snapshot.docs.map(d => ({
       id: d.id,
