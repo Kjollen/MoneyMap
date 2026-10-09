@@ -1,37 +1,46 @@
-import { supabase } from './lib/supabase';
+import { auth, db } from './lib/firebase';
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut as firebaseSignOut,
+  onAuthStateChanged,
+  User
+} from 'firebase/auth';
+import {
+  collection,
+  query,
+  where,
+  orderBy,
+  getDocs,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc
+} from 'firebase/firestore';
 import type { Transaction, CreditCard, Budget, PlanningGoal, ThemeMode, Loan } from './types';
 
 // ===================== AUTH =====================
 
 export async function signUp(email: string, password: string, name: string) {
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: { data: { name } },
-  });
-  if (error) throw error;
-  return data;
+  const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+  return userCredential.user;
 }
 
 export async function signIn(email: string, password: string) {
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) throw error;
-  return data;
+  const userCredential = await signInWithEmailAndPassword(auth, email, password);
+  return userCredential.user;
 }
 
 export async function signOut() {
-  await supabase.auth.signOut();
+  await firebaseSignOut(auth);
 }
 
-export async function getCurrentUser() {
-  const { data: { user } } = await supabase.auth.getUser();
-  return user;
+export async function getCurrentUser(): Promise<User | null> {
+  return auth.currentUser;
 }
 
-export function onAuthStateChange(callback: (user: any) => void) {
-  return supabase.auth.onAuthStateChange((_event, session) => {
-    callback(session?.user || null);
-  });
+export function onAuthStateChange(callback: (user: User | null) => void) {
+  return onAuthStateChanged(auth, callback);
 }
 
 // ===================== CACHE HELPER =====================
@@ -69,281 +78,250 @@ async function fetchWithRetry<T>(
   throw lastError;
 }
 
+function getUid(): string {
+  const user = auth.currentUser;
+  if (!user) throw new Error('Not authenticated');
+  return user.uid;
+}
+
 // ===================== TRANSACTIONS =====================
 
 export async function getTransactions(): Promise<Transaction[]> {
   return fetchWithRetry(async () => {
-    const { data, error } = await supabase
-      .from('transactions')
-      .select('*')
-      .order('date', { ascending: false });
-    if (error) throw error;
-    return (data || []).map(mapTransaction);
+    const uid = getUid();
+    const q = query(
+      collection(db, 'transactions'),
+      where('userId', '==', uid),
+      orderBy('date', 'desc')
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(d => ({
+      id: d.id,
+      type: d.data().type,
+      amount: d.data().amount,
+      category: d.data().category,
+      description: d.data().description,
+      date: d.data().date,
+      cardId: d.data().cardId || undefined,
+    }));
   }, 'cache_transactions', 300000);
 }
 
 export async function addTransaction(t: Omit<Transaction, 'id'>): Promise<Transaction> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
-  const { data, error } = await supabase
-    .from('transactions')
-    .insert({
-      user_id: user.id,
-      type: t.type,
-      amount: t.amount,
-      category: t.category,
-      description: t.description,
-      date: t.date,
-      card_id: t.cardId || null,
-    })
-    .select()
-    .single();
-  if (error) throw error;
+  const uid = getUid();
+  const docRef = await addDoc(collection(db, 'transactions'), {
+    userId: uid,
+    type: t.type,
+    amount: t.amount,
+    category: t.category,
+    description: t.description,
+    date: t.date,
+    cardId: t.cardId || null,
+  });
   localStorage.removeItem('cache_transactions');
-  return mapTransaction(data);
+  return { id: docRef.id, ...t };
 }
 
 export async function deleteTransaction(id: string) {
-  const { error } = await supabase.from('transactions').delete().eq('id', id);
-  if (error) throw error;
+  await deleteDoc(doc(db, 'transactions', id));
   localStorage.removeItem('cache_transactions');
-}
-
-function mapTransaction(row: any): Transaction {
-  return {
-    id: row.id,
-    type: row.type,
-    amount: row.amount,
-    category: row.category,
-    description: row.description,
-    date: row.date,
-    cardId: row.card_id,
-  };
 }
 
 // ===================== CREDIT CARDS =====================
 
 export async function getCards(): Promise<CreditCard[]> {
   return fetchWithRetry(async () => {
-    const { data, error } = await supabase
-      .from('credit_cards')
-      .select('*')
-      .order('created_at', { ascending: true });
-    if (error) throw error;
-    return (data || []).map(mapCard);
+    const uid = getUid();
+    const q = query(
+      collection(db, 'credit_cards'),
+      where('userId', '==', uid),
+      orderBy('createdAt', 'asc')
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(d => ({
+      id: d.id,
+      name: d.data().name,
+      bank: d.data().bank,
+      last4: d.data().last4,
+      limit: d.data().limit,
+      color: d.data().color,
+      cardType: d.data().cardType || 'debit',
+    }));
   }, 'cache_cards', 300000);
 }
 
 export async function addCard(c: Omit<CreditCard, 'id'>): Promise<CreditCard> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
-  const { data, error } = await supabase
-    .from('credit_cards')
-    .insert({
-      user_id: user.id,
-      name: c.name,
-      bank: c.bank,
-      last4: c.last4,
-      card_limit: c.limit,
-      color: c.color,
-      card_type: c.cardType || 'debit',
-    })
-    .select()
-    .single();
-  if (error) throw error;
+  const uid = getUid();
+  const docRef = await addDoc(collection(db, 'credit_cards'), {
+    userId: uid,
+    name: c.name,
+    bank: c.bank,
+    last4: c.last4,
+    limit: c.limit,
+    color: c.color,
+    cardType: c.cardType || 'debit',
+    createdAt: Date.now(),
+  });
   localStorage.removeItem('cache_cards');
-  return mapCard(data);
+  return { id: docRef.id, ...c };
 }
 
 export async function deleteCard(id: string) {
-  const { error } = await supabase.from('credit_cards').delete().eq('id', id);
-  if (error) throw error;
+  await deleteDoc(doc(db, 'credit_cards', id));
   localStorage.removeItem('cache_cards');
-}
-
-function mapCard(row: any): CreditCard {
-  return {
-    id: row.id,
-    name: row.name,
-    bank: row.bank,
-    last4: row.last4,
-    limit: row.card_limit,
-    color: row.color,
-    cardType: row.card_type || 'debit',
-  };
 }
 
 // ===================== BUDGETS =====================
 
 export async function getBudgets(): Promise<Budget[]> {
   return fetchWithRetry(async () => {
-    const { data, error } = await supabase
-      .from('budgets')
-      .select('*')
-      .order('created_at', { ascending: true });
-    if (error) throw error;
-    return (data || []).map(mapBudget);
+    const uid = getUid();
+    const q = query(
+      collection(db, 'budgets'),
+      where('userId', '==', uid),
+      orderBy('createdAt', 'asc')
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(d => ({
+      id: d.id,
+      category: d.data().category,
+      limit: d.data().limit,
+      month: d.data().month,
+    }));
   }, 'cache_budgets', 300000);
 }
 
 export async function addBudget(b: Omit<Budget, 'id'>): Promise<Budget> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
-  const { data, error } = await supabase
-    .from('budgets')
-    .insert({
-      user_id: user.id,
-      category: b.category,
-      card_limit: b.limit,
-      month: b.month,
-    })
-    .select()
-    .single();
-  if (error) throw error;
+  const uid = getUid();
+  const docRef = await addDoc(collection(db, 'budgets'), {
+    userId: uid,
+    category: b.category,
+    limit: b.limit,
+    month: b.month,
+    createdAt: Date.now(),
+  });
   localStorage.removeItem('cache_budgets');
-  return mapBudget(data);
+  return { id: docRef.id, ...b };
 }
 
 export async function deleteBudget(id: string) {
-  const { error } = await supabase.from('budgets').delete().eq('id', id);
-  if (error) throw error;
+  await deleteDoc(doc(db, 'budgets', id));
   localStorage.removeItem('cache_budgets');
-}
-
-function mapBudget(row: any): Budget {
-  return {
-    id: row.id,
-    category: row.category,
-    limit: row.card_limit,
-    month: row.month,
-  };
 }
 
 // ===================== GOALS =====================
 
 export async function getGoals(): Promise<PlanningGoal[]> {
   return fetchWithRetry(async () => {
-    const { data, error } = await supabase
-      .from('goals')
-      .select('*')
-      .order('created_at', { ascending: true });
-    if (error) throw error;
-    return (data || []).map(mapGoal);
+    const uid = getUid();
+    const q = query(
+      collection(db, 'goals'),
+      where('userId', '==', uid),
+      orderBy('createdAt', 'asc')
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(d => ({
+      id: d.id,
+      title: d.data().title,
+      targetAmount: d.data().targetAmount,
+      currentAmount: d.data().currentAmount,
+      deadline: d.data().deadline,
+      icon: d.data().icon,
+    }));
   }, 'cache_goals', 300000);
 }
 
 export async function addGoal(g: Omit<PlanningGoal, 'id'>): Promise<PlanningGoal> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
-  const { data, error } = await supabase
-    .from('goals')
-    .insert({
-      user_id: user.id,
-      title: g.title,
-      target_amount: g.targetAmount,
-      current_amount: g.currentAmount,
-      deadline: g.deadline,
-      icon: g.icon,
-    })
-    .select()
-    .single();
-  if (error) throw error;
+  const uid = getUid();
+  const docRef = await addDoc(collection(db, 'goals'), {
+    userId: uid,
+    title: g.title,
+    targetAmount: g.targetAmount,
+    currentAmount: g.currentAmount,
+    deadline: g.deadline,
+    icon: g.icon,
+    createdAt: Date.now(),
+  });
   localStorage.removeItem('cache_goals');
-  return mapGoal(data);
+  return { id: docRef.id, ...g };
 }
 
 export async function updateGoal(id: string, updates: Partial<PlanningGoal>) {
+  const docRef = doc(db, 'goals', id);
   const dbUpdates: any = {};
-  if (updates.currentAmount !== undefined) dbUpdates.current_amount = updates.currentAmount;
-  const { error } = await supabase.from('goals').update(dbUpdates).eq('id', id);
-  if (error) throw error;
+  if (updates.currentAmount !== undefined) dbUpdates.currentAmount = updates.currentAmount;
+  if (updates.title !== undefined) dbUpdates.title = updates.title;
+  if (updates.targetAmount !== undefined) dbUpdates.targetAmount = updates.targetAmount;
+  if (updates.deadline !== undefined) dbUpdates.deadline = updates.deadline;
+  await updateDoc(docRef, dbUpdates);
   localStorage.removeItem('cache_goals');
 }
 
 export async function deleteGoal(id: string) {
-  const { error } = await supabase.from('goals').delete().eq('id', id);
-  if (error) throw error;
+  await deleteDoc(doc(db, 'goals', id));
   localStorage.removeItem('cache_goals');
-}
-
-function mapGoal(row: any): PlanningGoal {
-  return {
-    id: row.id,
-    title: row.title,
-    targetAmount: row.target_amount,
-    currentAmount: row.current_amount,
-    deadline: row.deadline,
-    icon: row.icon,
-  };
 }
 
 // ===================== LOANS =====================
 
 export async function getLoans(): Promise<Loan[]> {
   return fetchWithRetry(async () => {
-    const { data, error } = await supabase
-      .from('loans')
-      .select('*')
-      .order('created_at', { ascending: true });
-    if (error) throw error;
-    return (data || []).map(mapLoan);
+    const uid = getUid();
+    const q = query(
+      collection(db, 'loans'),
+      where('userId', '==', uid),
+      orderBy('createdAt', 'asc')
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(d => ({
+      id: d.id,
+      name: d.data().name,
+      bank: d.data().bank,
+      totalAmount: d.data().totalAmount,
+      remainingAmount: d.data().remainingAmount,
+      monthlyPayment: d.data().monthlyPayment,
+      interestRate: d.data().interestRate,
+      paymentDay: d.data().paymentDay,
+      nextPaymentDate: d.data().nextPaymentDate,
+      endDate: d.data().endDate || '',
+      color: d.data().color,
+    }));
   }, 'cache_loans', 300000);
 }
 
 export async function addLoan(loan: Omit<Loan, 'id'>): Promise<Loan> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
-  const { data, error } = await supabase
-    .from('loans')
-    .insert({
-      user_id: user.id,
-      name: loan.name,
-      bank: loan.bank,
-      total_amount: loan.totalAmount,
-      remaining_amount: loan.remainingAmount,
-      monthly_payment: loan.monthlyPayment,
-      interest_rate: loan.interestRate,
-      payment_day: loan.paymentDay,
-      next_payment_date: loan.nextPaymentDate,
-      end_date: loan.endDate || null,
-      color: loan.color,
-    })
-    .select()
-    .single();
-  if (error) throw error;
+  const uid = getUid();
+  const docRef = await addDoc(collection(db, 'loans'), {
+    userId: uid,
+    name: loan.name,
+    bank: loan.bank,
+    totalAmount: loan.totalAmount,
+    remainingAmount: loan.remainingAmount,
+    monthlyPayment: loan.monthlyPayment,
+    interestRate: loan.interestRate,
+    paymentDay: loan.paymentDay,
+    nextPaymentDate: loan.nextPaymentDate,
+    endDate: loan.endDate || '',
+    color: loan.color,
+    createdAt: Date.now(),
+  });
   localStorage.removeItem('cache_loans');
-  return mapLoan(data);
+  return { id: docRef.id, ...loan };
 }
 
 export async function updateLoan(id: string, updates: Partial<Loan>) {
+  const docRef = doc(db, 'loans', id);
   const dbUpdates: any = {};
-  if (updates.remainingAmount !== undefined) dbUpdates.remaining_amount = updates.remainingAmount;
-  if (updates.nextPaymentDate !== undefined) dbUpdates.next_payment_date = updates.nextPaymentDate;
-  const { error } = await supabase.from('loans').update(dbUpdates).eq('id', id);
-  if (error) throw error;
+  if (updates.remainingAmount !== undefined) dbUpdates.remainingAmount = updates.remainingAmount;
+  if (updates.nextPaymentDate !== undefined) dbUpdates.nextPaymentDate = updates.nextPaymentDate;
+  if (updates.name !== undefined) dbUpdates.name = updates.name;
+  await updateDoc(docRef, dbUpdates);
   localStorage.removeItem('cache_loans');
 }
 
 export async function deleteLoan(id: string) {
-  const { error } = await supabase.from('loans').delete().eq('id', id);
-  if (error) throw error;
+  await deleteDoc(doc(db, 'loans', id));
   localStorage.removeItem('cache_loans');
-}
-
-function mapLoan(row: any): Loan {
-  return {
-    id: row.id,
-    name: row.name,
-    bank: row.bank,
-    totalAmount: row.total_amount,
-    remainingAmount: row.remaining_amount,
-    monthlyPayment: row.monthly_payment,
-    interestRate: row.interest_rate,
-    paymentDay: row.payment_day,
-    nextPaymentDate: row.next_payment_date,
-    endDate: row.end_date,
-    color: row.color,
-  };
 }
 
 // ===================== THEME =====================
