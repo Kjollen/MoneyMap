@@ -207,6 +207,13 @@ export default function App() {
             </Layout>
           </ProtectedRoute>
         } />
+                <Route path="/cards" element={
+          <ProtectedRoute>
+            <Layout theme={theme} toggleTheme={toggleTheme}>
+              <Cards />
+            </Layout>
+          </ProtectedRoute>
+        } />
         <Route path="/planning" element={
           <ProtectedRoute>
             <Layout theme={theme} toggleTheme={toggleTheme}>
