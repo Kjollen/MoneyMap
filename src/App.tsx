@@ -23,8 +23,8 @@ function Layout({ children, theme, toggleTheme }: { children: React.ReactNode; t
 
   useEffect(() => {
     getCurrentUser().then(setUser);
-    const {  { subscription } } = onAuthStateChange(setUser);
-return () => subscription.unsubscribe();
+    const unsubscribe = onAuthStateChange(setUser);
+    return () => unsubscribe();
   }, []);
 
     const navItems = [
