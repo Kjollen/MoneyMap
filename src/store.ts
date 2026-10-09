@@ -88,10 +88,10 @@ function getUid(): string {
 export async function getTransactions(): Promise<Transaction[]> {
   return fetchWithRetry(async () => {
     const uid = getUid();
-    const q = query(
+        const q = query(
       collection(db, 'transactions'),
-      where('userId', '==', uid),
-     );
+      where('userId', '==', uid)
+    );
     const snapshot = await getDocs(q);
     return snapshot.docs.map(d => ({
       id: d.id,
@@ -132,8 +132,8 @@ export async function getCards(): Promise<CreditCard[]> {
     const uid = getUid();
     const q = query(
       collection(db, 'credit_cards'),
-      where('userId', '==', uid),
-      );
+      where('userId', '==', uid)
+    );
     const snapshot = await getDocs(q);
     return snapshot.docs.map(d => ({
       id: d.id,
@@ -175,8 +175,8 @@ export async function getBudgets(): Promise<Budget[]> {
     const uid = getUid();
     const q = query(
       collection(db, 'budgets'),
-      where('userId', '==', uid),
-     );
+      where('userId', '==', uid)
+    );
     const snapshot = await getDocs(q);
     return snapshot.docs.map(d => ({
       id: d.id,
@@ -212,8 +212,8 @@ export async function getGoals(): Promise<PlanningGoal[]> {
     const uid = getUid();
     const q = query(
       collection(db, 'goals'),
-      where('userId', '==', uid),
-     );
+      where('userId', '==', uid)
+    );
     const snapshot = await getDocs(q);
     return snapshot.docs.map(d => ({
       id: d.id,
@@ -264,8 +264,8 @@ export async function getLoans(): Promise<Loan[]> {
     const uid = getUid();
     const q = query(
       collection(db, 'loans'),
-      where('userId', '==', uid),
-     );
+      where('userId', '==', uid)
+    );
     const snapshot = await getDocs(q);
     return snapshot.docs.map(d => ({
       id: d.id,
