@@ -136,18 +136,13 @@ export default function Transactions() {
                   <input type="date" value={formDate} onChange={e => setFormDate(e.target.value)} className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Карта</label>
-                  <select value={formCardId} onChange={e => setFormCardId(e.target.value)} className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none">
-                    <option value="">Не указана</option>
-                    {cards.map(c => <option key={c.id} value={c.id}>•••• {c.last4}</option>)}
-                  </select>
-                </div>
-              </div>
-              <button type="submit" className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition">Добавить</button>
-            </form>
-          </div>
-        </div>
-      )}
+                  <div>
+  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Кредитная карта</label>
+  <select value={formCardId} onChange={e => setFormCardId(e.target.value)} className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none">
+    <option value="">Общий остаток</option>
+    {cards.filter(c => c.cardType === 'credit').map(c => <option key={c.id} value={c.id}>{c.name} (•••• {c.last4})</option>)}
+  </select>
+</div>
 
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
         <div className="flex flex-col sm:flex-row gap-3">
