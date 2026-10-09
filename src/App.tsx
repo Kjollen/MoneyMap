@@ -18,12 +18,29 @@ function Layout({ children, theme, toggleTheme }: { children: React.ReactNode; t
   const location = useLocation();
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
 
   useEffect(() => {
     getCurrentUser().then(setUser);
     const unsubscribe = onAuthStateChange(setUser);
     return () => unsubscribe();
   }, []);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStart(e.touches[0].clientX);
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStart === null) return;
+    const touchEnd = e.changedTouches[0].clientX;
+    const diff = touchEnd - touchStart;
+    
+    if (diff > 50 && touchStart < 50) {
+      setSidebarOpen(true);
+    } else if (diff < -50 && sidebarOpen) {
+      setSidebarOpen(false);
+    }
+  };
 
   const navItems = [
     { path: '/dashboard', label: 'Дашборд', icon: LayoutDashboard },
@@ -40,7 +57,11 @@ function Layout({ children, theme, toggleTheme }: { children: React.ReactNode; t
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
+    <div 
+      className="min-h-screen bg-gray-50 dark:bg-gray-900 flex"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
       {sidebarOpen && (
         <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />
       )}
