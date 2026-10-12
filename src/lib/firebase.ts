@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, setPersistence, browserLocalPersistence } from 'firebase/auth';
-import { getFirestore, enableMultiTabIndexedDbPersistence } from 'firebase/firestore';
+import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: "AIzaSyDW_QlYGeeDST5m-zIzHrQJ__6Qlv81NWg",
@@ -15,10 +15,7 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 
+// Сохраняем сессию в localStorage
 setPersistence(auth, browserLocalPersistence).catch((error) => {
   console.error('Persistence error:', error);
-});
-
-enableMultiTabIndexedDbPersistence(db).catch((err) => {
-  console.log('Persistence error:', err.code);
 });
