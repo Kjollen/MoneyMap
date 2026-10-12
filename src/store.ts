@@ -33,7 +33,12 @@ export async function signOut() {
 }
 
 export async function getCurrentUser(): Promise<User | null> {
-  return auth.currentUser;
+  return new Promise((resolve) => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      unsubscribe();
+      resolve(user);
+    });
+  });
 }
 
 export function onAuthStateChange(callback: (user: User | null) => void) {
