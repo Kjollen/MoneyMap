@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, AlertTriangle, CheckCircle, X } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
+import { Trash2, AlertTriangle, CheckCircle, X } from 'lucide-react';
 import { getBudgets, getTransactions, getLoans, addBudget, deleteBudget } from '../store';
 import { EXPENSE_CATEGORIES, CATEGORY_ICONS } from '../types';
 import type { Budget as BudgetType, Transaction, Loan } from '../types';
 import { format, parseISO } from 'date-fns';
 
 export default function Budget() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [budgets, setBudgets] = useState<BudgetType[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loans, setLoans] = useState<Loan[]>([]);
@@ -22,6 +24,13 @@ export default function Budget() {
     }).catch(() => setLoading(false));
   }, []);
 
+  useEffect(() => {
+    if (searchParams.get('action') === 'add') {
+      setShowForm(true);
+      setSearchParams({});
+    }
+  }, [searchParams]);
+
   const currentBudgets = budgets.filter(b => b.month === ym);
 
   const spending = currentBudgets.map(b => {
@@ -36,7 +45,6 @@ export default function Budget() {
   const totalBudget = currentBudgets.reduce((s, b) => s + b.limit, 0);
   const totalSpent = spending.reduce((s, b) => s + b.spent, 0);
   const overBudget = spending.filter(b => b.percent > 100);
-  
   const totalLoanPayments = loans.reduce((s, l) => s + l.monthlyPayment, 0);
   const totalExpenses = totalSpent + totalLoanPayments;
 
@@ -116,9 +124,8 @@ export default function Budget() {
       )}
 
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-        <div className="flex justify-between items-center mb-6">
+        <div className="mb-6">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Бюджет на {format(now, 'LLLL yyyy')}</h3>
-          <button onClick={() => setShowForm(true)} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition"><Plus size={16} />Добавить</button>
         </div>
         {spending.length === 0 ? (
           <div className="text-center py-12"><p className="text-gray-500 dark:text-gray-400">Бюджет не задан</p></div>
