@@ -15,12 +15,10 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 
-// Сохраняем сессию в localStorage
 setPersistence(auth, browserLocalPersistence).catch((error) => {
   console.error('Persistence error:', error);
 });
 
-// Включаем офлайн-кэш
 enableMultiTabIndexedDbPersistence(db).catch((err) => {
   console.log('Persistence error:', err.code);
 });
