@@ -43,6 +43,7 @@ function Layout({ children, theme, toggleTheme }: { children: React.ReactNode; t
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
+      <div className="fixed left-0 top-0 bottom-0 w-5 z-[60] lg:hidden" />
       {sidebarOpen && (
         <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />
       )}
@@ -78,7 +79,7 @@ function Layout({ children, theme, toggleTheme }: { children: React.ReactNode; t
       <main className="flex-1 min-w-0">
         <header className="sticky top-0 z-30 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 px-4 lg:px-8 py-4 flex items-center justify-between">
           <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
-            <Menu size={24} />
+            <Menu size={24} className="text-gray-600 dark:text-gray-300" />
           </button>
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
             {navItems.find(i => i.path === location.pathname)?.label || 'Дашборд'}
