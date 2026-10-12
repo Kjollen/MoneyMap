@@ -148,7 +148,7 @@ function Layout({ children, theme, toggleTheme }: { children: React.ReactNode; t
         </div>
       </aside>
 
-      <main className="flex-1 min-w-0 pb-16 lg:pb-0">
+      <main className="flex-1 min-w-0">
         <header className="sticky top-0 z-30 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 px-4 lg:px-8 py-4 flex items-center justify-between">
           <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
             <Menu size={24} className="text-gray-600 dark:text-gray-300" />
@@ -156,13 +156,16 @@ function Layout({ children, theme, toggleTheme }: { children: React.ReactNode; t
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
             {navItems.find(i => i.path === location.pathname)?.label || 'Дашборд'}
           </h2>
-          <Link to={addAction} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition shadow-sm">
-            <Plus size={16} />
-            <span className="hidden sm:inline">Добавить</span>
-          </Link>
+          {ADD_BUTTON_PATHS.includes(location.pathname) && (
+            <Link
+              to={`${location.pathname}?action=add`}
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition shadow-sm"
+            >
+              <Plus size={16} />
+              <span className="hidden sm:inline">Добавить</span>
+            </Link>
+          )}
         </header>
-        <div className="p-4 lg:p-8">{children}</div>
-      </main>
 
       {/* Нижняя навигация для мобильных */}
       <nav className="fixed bottom-0 left-0 right-0 z-30 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 lg:hidden">
