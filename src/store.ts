@@ -1,49 +1,38 @@
-import { auth, db } from './lib/firebase';
-import {
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  signOut as firebaseSignOut,
-  onAuthStateChanged,
-  User
-} from 'firebase/auth';
-import {
-  collection,
-  query,
-  where,
-  getDocs,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  doc
-} from 'firebase/firestore';
+import { account, databases, DATABASE_ID, COLLECTIONS } from './lib/appwrite';
+import { Query } from 'appwrite';
 import type { Transaction, CreditCard, Budget, PlanningGoal, ThemeMode, Loan } from './types';
 
+// ===================== AUTH =====================
+
 export async function signUp(email: string, password: string, name: string) {
-  const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-  return userCredential.user;
+  const user = await account.create(email, password, name);
+  await account.createEmailPasswordSession(email, password);
+  return user;
 }
 
 export async function signIn(email: string, password: string) {
-  const userCredential = await signInWithEmailAndPassword(auth, email, password);
-  return userCredential.user;
+  await account.createEmailPasswordSession(email, password);
+  return await account.get();
 }
 
 export async function signOut() {
-  await firebaseSignOut(auth);
+  await account.deleteSession('current');
 }
 
-export async function getCurrentUser(): Promise<User | null> {
-  return new Promise((resolve) => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      unsubscribe();
-      resolve(user);
-    });
-  });
+export async function getCurrentUser() {
+  try {
+    return await account.get();
+  } catch {
+    return null;
+  }
 }
 
-export function onAuthStateChange(callback: (user: User | null) => void) {
-  return onAuthStateChanged(auth, callback);
+export function onAuthStateChange(callback: (user: any) => void) {
+  getCurrentUser().then(callback);
+  return () => {};
 }
+
+// ===================== CACHE HELPER =====================
 
 async function fetchWithRetry<T>(
   fetchFn: () => Promise<T>,
@@ -78,236 +67,289 @@ async function fetchWithRetry<T>(
   throw lastError;
 }
 
-function getUid(): string {
-  const user = auth.currentUser;
+async function getUid(): Promise<string> {
+  const user = await account.get();
   if (!user) throw new Error('Not authenticated');
-  return user.uid;
+  return user.$id;
 }
+
+// ===================== TRANSACTIONS =====================
 
 export async function getTransactions(): Promise<Transaction[]> {
   return fetchWithRetry(async () => {
-    const uid = getUid();
-    const q = query(
-      collection(db, 'transactions'),
-      where('userId', '==', uid)
+    const uid = await getUid();
+    const response = await databases.listDocuments(
+      DATABASE_ID,
+      COLLECTIONS.transactions,
+      [Query.equal('userId', uid), Query.orderDesc('date')]
     );
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(d => ({
-      id: d.id,
-      type: d.data().type,
-      amount: d.data().amount,
-      category: d.data().category,
-      description: d.data().description,
-      date: d.data().date,
-      cardId: d.data().cardId || undefined,
-    }));
+    return response.documents.map(mapTransaction);
   }, 'cache_transactions', 300000);
 }
 
 export async function addTransaction(t: Omit<Transaction, 'id'>): Promise<Transaction> {
-  const uid = getUid();
-  const docRef = await addDoc(collection(db, 'transactions'), {
-    userId: uid,
-    type: t.type,
-    amount: t.amount,
-    category: t.category,
-    description: t.description,
-    date: t.date,
-    cardId: t.cardId || null,
-  });
+  const uid = await getUid();
+  const doc = await databases.createDocument(
+    DATABASE_ID,
+    COLLECTIONS.transactions,
+    'unique()',
+    {
+      userId: uid,
+      type: t.type,
+      amount: t.amount,
+      category: t.category,
+      description: t.description,
+      date: t.date,
+      cardId: t.cardId || null
+    }
+  );
   localStorage.removeItem('cache_transactions');
-  return { id: docRef.id, ...t };
+  return mapTransaction(doc);
 }
 
 export async function deleteTransaction(id: string) {
-  await deleteDoc(doc(db, 'transactions', id));
+  await databases.deleteDocument(DATABASE_ID, COLLECTIONS.transactions, id);
   localStorage.removeItem('cache_transactions');
 }
 
+function mapTransaction(doc: any): Transaction {
+  return {
+    id: doc.$id,
+    type: doc.type,
+    amount: doc.amount,
+    category: doc.category,
+    description: doc.description,
+    date: doc.date,
+    cardId: doc.cardId || undefined
+  };
+}
+
+// ===================== CREDIT CARDS =====================
+
 export async function getCards(): Promise<CreditCard[]> {
   return fetchWithRetry(async () => {
-    const uid = getUid();
-    const q = query(
-      collection(db, 'credit_cards'),
-      where('userId', '==', uid)
+    const uid = await getUid();
+    const response = await databases.listDocuments(
+      DATABASE_ID,
+      COLLECTIONS.credit_cards,
+      [Query.equal('userId', uid)]
     );
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(d => ({
-      id: d.id,
-      name: d.data().name,
-      bank: d.data().bank,
-      last4: d.data().last4,
-      limit: d.data().limit,
-      color: d.data().color,
-      cardType: d.data().cardType || 'debit',
-    }));
+    return response.documents.map(mapCard);
   }, 'cache_cards', 300000);
 }
 
 export async function addCard(c: Omit<CreditCard, 'id'>): Promise<CreditCard> {
-  const uid = getUid();
-  const docRef = await addDoc(collection(db, 'credit_cards'), {
-    userId: uid,
-    name: c.name,
-    bank: c.bank,
-    last4: c.last4,
-    limit: c.limit,
-    color: c.color,
-    cardType: c.cardType || 'debit',
-    createdAt: Date.now(),
-  });
+  const uid = await getUid();
+  const doc = await databases.createDocument(
+    DATABASE_ID,
+    COLLECTIONS.credit_cards,
+    'unique()',
+    {
+      userId: uid,
+      name: c.name,
+      bank: c.bank,
+      last4: c.last4,
+      card_limit: c.limit,
+      color: c.color,
+      card_type: c.cardType || 'debit'
+    }
+  );
   localStorage.removeItem('cache_cards');
-  return { id: docRef.id, ...c };
+  return mapCard(doc);
 }
 
 export async function deleteCard(id: string) {
-  await deleteDoc(doc(db, 'credit_cards', id));
+  await databases.deleteDocument(DATABASE_ID, COLLECTIONS.credit_cards, id);
   localStorage.removeItem('cache_cards');
 }
 
+function mapCard(doc: any): CreditCard {
+  return {
+    id: doc.$id,
+    name: doc.name,
+    bank: doc.bank,
+    last4: doc.last4,
+    limit: doc.card_limit,
+    color: doc.color,
+    cardType: doc.card_type || 'debit'
+  };
+}
+
+// ===================== BUDGETS =====================
+
 export async function getBudgets(): Promise<Budget[]> {
   return fetchWithRetry(async () => {
-    const uid = getUid();
-    const q = query(
-      collection(db, 'budgets'),
-      where('userId', '==', uid)
+    const uid = await getUid();
+    const response = await databases.listDocuments(
+      DATABASE_ID,
+      COLLECTIONS.budgets,
+      [Query.equal('userId', uid)]
     );
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(d => ({
-      id: d.id,
-      category: d.data().category,
-      limit: d.data().limit,
-      month: d.data().month,
-    }));
+    return response.documents.map(mapBudget);
   }, 'cache_budgets', 300000);
 }
 
 export async function addBudget(b: Omit<Budget, 'id'>): Promise<Budget> {
-  const uid = getUid();
-  const docRef = await addDoc(collection(db, 'budgets'), {
-    userId: uid,
-    category: b.category,
-    limit: b.limit,
-    month: b.month,
-    createdAt: Date.now(),
-  });
+  const uid = await getUid();
+  const doc = await databases.createDocument(
+    DATABASE_ID,
+    COLLECTIONS.budgets,
+    'unique()',
+    {
+      userId: uid,
+      category: b.category,
+      card_limit: b.limit,
+      month: b.month
+    }
+  );
   localStorage.removeItem('cache_budgets');
-  return { id: docRef.id, ...b };
+  return mapBudget(doc);
 }
 
 export async function deleteBudget(id: string) {
-  await deleteDoc(doc(db, 'budgets', id));
+  await databases.deleteDocument(DATABASE_ID, COLLECTIONS.budgets, id);
   localStorage.removeItem('cache_budgets');
 }
 
+function mapBudget(doc: any): Budget {
+  return {
+    id: doc.$id,
+    category: doc.category,
+    limit: doc.card_limit,
+    month: doc.month
+  };
+}
+
+// ===================== GOALS =====================
+
 export async function getGoals(): Promise<PlanningGoal[]> {
   return fetchWithRetry(async () => {
-    const uid = getUid();
-    const q = query(
-      collection(db, 'goals'),
-      where('userId', '==', uid)
+    const uid = await getUid();
+    const response = await databases.listDocuments(
+      DATABASE_ID,
+      COLLECTIONS.goals,
+      [Query.equal('userId', uid)]
     );
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(d => ({
-      id: d.id,
-      title: d.data().title,
-      targetAmount: d.data().targetAmount,
-      currentAmount: d.data().currentAmount,
-      deadline: d.data().deadline,
-      icon: d.data().icon,
-    }));
+    return response.documents.map(mapGoal);
   }, 'cache_goals', 300000);
 }
 
 export async function addGoal(g: Omit<PlanningGoal, 'id'>): Promise<PlanningGoal> {
-  const uid = getUid();
-  const docRef = await addDoc(collection(db, 'goals'), {
-    userId: uid,
-    title: g.title,
-    targetAmount: g.targetAmount,
-    currentAmount: g.currentAmount,
-    deadline: g.deadline,
-    icon: g.icon,
-    createdAt: Date.now(),
-  });
+  const uid = await getUid();
+  const doc = await databases.createDocument(
+    DATABASE_ID,
+    COLLECTIONS.goals,
+    'unique()',
+    {
+      userId: uid,
+      title: g.title,
+      target_amount: g.targetAmount,
+      current_amount: g.currentAmount,
+      deadline: g.deadline,
+      icon: g.icon
+    }
+  );
   localStorage.removeItem('cache_goals');
-  return { id: docRef.id, ...g };
+  return mapGoal(doc);
 }
 
 export async function updateGoal(id: string, updates: Partial<PlanningGoal>) {
-  const docRef = doc(db, 'goals', id);
   const dbUpdates: any = {};
-  if (updates.currentAmount !== undefined) dbUpdates.currentAmount = updates.currentAmount;
+  if (updates.currentAmount !== undefined) dbUpdates.current_amount = updates.currentAmount;
   if (updates.title !== undefined) dbUpdates.title = updates.title;
-  if (updates.targetAmount !== undefined) dbUpdates.targetAmount = updates.targetAmount;
+  if (updates.targetAmount !== undefined) dbUpdates.target_amount = updates.targetAmount;
   if (updates.deadline !== undefined) dbUpdates.deadline = updates.deadline;
-  await updateDoc(docRef, dbUpdates);
+  
+  await databases.updateDocument(DATABASE_ID, COLLECTIONS.goals, id, dbUpdates);
   localStorage.removeItem('cache_goals');
 }
 
 export async function deleteGoal(id: string) {
-  await deleteDoc(doc(db, 'goals', id));
+  await databases.deleteDocument(DATABASE_ID, COLLECTIONS.goals, id);
   localStorage.removeItem('cache_goals');
 }
 
+function mapGoal(doc: any): PlanningGoal {
+  return {
+    id: doc.$id,
+    title: doc.title,
+    targetAmount: doc.target_amount,
+    currentAmount: doc.current_amount,
+    deadline: doc.deadline,
+    icon: doc.icon
+  };
+}
+
+// ===================== LOANS =====================
+
 export async function getLoans(): Promise<Loan[]> {
   return fetchWithRetry(async () => {
-    const uid = getUid();
-    const q = query(
-      collection(db, 'loans'),
-      where('userId', '==', uid)
+    const uid = await getUid();
+    const response = await databases.listDocuments(
+      DATABASE_ID,
+      COLLECTIONS.loans,
+      [Query.equal('userId', uid)]
     );
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(d => ({
-      id: d.id,
-      name: d.data().name,
-      bank: d.data().bank,
-      totalAmount: d.data().totalAmount,
-      remainingAmount: d.data().remainingAmount,
-      monthlyPayment: d.data().monthlyPayment,
-      interestRate: d.data().interestRate,
-      paymentDay: d.data().paymentDay,
-      nextPaymentDate: d.data().nextPaymentDate,
-      endDate: d.data().endDate || '',
-      color: d.data().color,
-    }));
+    return response.documents.map(mapLoan);
   }, 'cache_loans', 300000);
 }
 
 export async function addLoan(loan: Omit<Loan, 'id'>): Promise<Loan> {
-  const uid = getUid();
-  const docRef = await addDoc(collection(db, 'loans'), {
-    userId: uid,
-    name: loan.name,
-    bank: loan.bank,
-    totalAmount: loan.totalAmount,
-    remainingAmount: loan.remainingAmount,
-    monthlyPayment: loan.monthlyPayment,
-    interestRate: loan.interestRate,
-    paymentDay: loan.paymentDay,
-    nextPaymentDate: loan.nextPaymentDate,
-    endDate: loan.endDate || '',
-    color: loan.color,
-    createdAt: Date.now(),
-  });
+  const uid = await getUid();
+  const doc = await databases.createDocument(
+    DATABASE_ID,
+    COLLECTIONS.loans,
+    'unique()',
+    {
+      userId: uid,
+      name: loan.name,
+      bank: loan.bank,
+      total_amount: loan.totalAmount,
+      remaining_amount: loan.remainingAmount,
+      monthly_payment: loan.monthlyPayment,
+      interest_rate: loan.interestRate,
+      payment_day: loan.paymentDay,
+      next_payment_date: loan.nextPaymentDate,
+      end_date: loan.endDate || '',
+      color: loan.color
+    }
+  );
   localStorage.removeItem('cache_loans');
-  return { id: docRef.id, ...loan };
+  return mapLoan(doc);
 }
 
 export async function updateLoan(id: string, updates: Partial<Loan>) {
-  const docRef = doc(db, 'loans', id);
   const dbUpdates: any = {};
-  if (updates.remainingAmount !== undefined) dbUpdates.remainingAmount = updates.remainingAmount;
-  if (updates.nextPaymentDate !== undefined) dbUpdates.nextPaymentDate = updates.nextPaymentDate;
+  if (updates.remainingAmount !== undefined) dbUpdates.remaining_amount = updates.remainingAmount;
+  if (updates.nextPaymentDate !== undefined) dbUpdates.next_payment_date = updates.nextPaymentDate;
   if (updates.name !== undefined) dbUpdates.name = updates.name;
-  await updateDoc(docRef, dbUpdates);
+  
+  await databases.updateDocument(DATABASE_ID, COLLECTIONS.loans, id, dbUpdates);
   localStorage.removeItem('cache_loans');
 }
 
 export async function deleteLoan(id: string) {
-  await deleteDoc(doc(db, 'loans', id));
+  await databases.deleteDocument(DATABASE_ID, COLLECTIONS.loans, id);
   localStorage.removeItem('cache_loans');
 }
+
+function mapLoan(doc: any): Loan {
+  return {
+    id: doc.$id,
+    name: doc.name,
+    bank: doc.bank,
+    totalAmount: doc.total_amount,
+    remainingAmount: doc.remaining_amount,
+    monthlyPayment: doc.monthly_payment,
+    interestRate: doc.interest_rate,
+    paymentDay: doc.payment_day,
+    nextPaymentDate: doc.next_payment_date,
+    endDate: doc.end_date || '',
+    color: doc.color
+  };
+}
+
+// ===================== THEME =====================
 
 export function getTheme(): ThemeMode {
   return (localStorage.getItem('ft_theme') as ThemeMode) || 'light';
