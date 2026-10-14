@@ -70,7 +70,9 @@ async function fetchWithRetry<T>(
 async function getUid(): Promise<string> {
   const user = await account.get();
   if (!user) throw new Error('Not authenticated');
-  return user.$id.substring(0, 36);
+  // Генерируем короткий userId из email (до 36 символов)
+  const shortId = user.email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+  return shortId.substring(0, 32) + '_' + user.$id.substring(0, 3);
 }
 
 // ===================== TRANSACTIONS =====================
