@@ -5,7 +5,9 @@ import type { Transaction, CreditCard, Budget, PlanningGoal, ThemeMode, Loan } f
 // ===================== AUTH =====================
 
 export async function signUp(email: string, password: string, name: string) {
-  const user = await account.create(email, password, name);
+  // Генерируем короткий userId (максимум 36 символов)
+  const userId = 'user_' + email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '').substring(0, 30);
+  const user = await account.create(userId, email, password, name);
   await account.createEmailPasswordSession(email, password);
   return user;
 }
@@ -70,9 +72,7 @@ async function fetchWithRetry<T>(
 async function getUid(): Promise<string> {
   const user = await account.get();
   if (!user) throw new Error('Not authenticated');
-  // Генерируем короткий userId из email (до 36 символов)
-  const shortId = user.email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
-  return shortId.substring(0, 32) + '_' + user.$id.substring(0, 3);
+  return user.$id;
 }
 
 // ===================== TRANSACTIONS =====================
