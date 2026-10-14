@@ -70,7 +70,8 @@ async function fetchWithRetry<T>(
 async function getUid(): Promise<string> {
   const user = await account.get();
   if (!user) throw new Error('Not authenticated');
-  return user.$id;
+  // Appwrite требует userId максимум 36 символов
+  return user.$id.substring(0, 36);
 }
 
 // ===================== TRANSACTIONS =====================
