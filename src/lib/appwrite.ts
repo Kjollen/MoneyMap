@@ -1,8 +1,8 @@
 import { Client, Account, Databases } from 'appwrite';
 
 const client = new Client()
-  .setEndpoint('http://31.59.126.197/v1')
-  .setProject('6ace2093002a63c56f64');
+  .setEndpoint('https://moneymap-finance.duckdns.org/v1')
+  .setProject('6acf4911001d3d89e235');
 
 export const account = new Account(client);
 export const databases = new Databases(client);
