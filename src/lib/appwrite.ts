@@ -7,7 +7,7 @@ const client = new Client()
 export const account = new Account(client);
 export const databases = new Databases(client);
 
-export const DATABASE_ID = 'moneymap';
+export const DATABASE_ID = '6acf55d4001d54979db8';
 export const COLLECTIONS = {
   transactions: 'transactions',
   credit_cards: 'credit_cards',
